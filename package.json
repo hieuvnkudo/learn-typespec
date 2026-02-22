@@ -19,6 +19,7 @@
     "@typespec/openapi": "latest",
     "@typespec/openapi3": "latest",
     "@typespec/rest": "latest",
+    "@typespec/versioning": "latest",
     "concurrently": "^9.2.1",
     "wrangler": "^4.4.0"
   }

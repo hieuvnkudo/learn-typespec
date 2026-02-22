@@ -1,44 +1,198 @@
 import "@typespec/http";
+import "@typespec/versioning";
 
 using Http;
-@service(#{ title: "Widget Service" })
-namespace DemoService;
+using Versioning;
 
-model Widget {
-  id: string;
-  weight: int32;
-  color: "red" | "blue";
+@service(#{ title: "Pet Store" })
+@server("https://example.com", "Single server endpoint")
+@versioned(Versions)
+namespace PetStore;
+
+enum Versions {
+  v1: "1.0",
+  v2: "2.0",
 }
 
-model WidgetList {
-  items: Widget[];
+model Pet {
+  id: int32;
+
+  @minLength(1)
+  name: string;
+
+  @minValue(0)
+  @maxValue(100)
+  age: int32;
+
+  kind: petType;
+}
+
+enum petType {
+  dog: "dog",
+  cat: "cat",
+  fish: "fish",
+  bird: "bird",
+  reptile: "reptile",
+}
+
+@added(Versions.v2)
+model Toy {
+  id: int32;
+  name: string;
+}
+
+model CommonParameters {
+  @header
+  requestID: string;
+
+  @query
+  locale?: string;
+
+  @header
+  clientVersion?: string;
+}
+
+// highlight-start
+model PetListResponse {
+  ...OkResponse;
+  ...Body<Pet[]>;
+}
+
+model PetResponse {
+  ...OkResponse;
+  ...Body<Pet>;
+}
+
+model PetCreatedResponse {
+  ...CreatedResponse;
+  ...Body<Pet>;
+}
+
+model PetAcceptedResponse {
+  ...AcceptedResponse;
+  ...Body<Pet>;
+}
+
+model PetErrorResponse {
+  ...BadRequestResponse;
+  ...Body<ValidationError>;
+}
+
+model PetNotFoundResponse {
+  ...NotFoundResponse;
+  ...Body<NotFoundError>;
+}
+
+model PetUnauthorizedResponse {
+  ...UnauthorizedResponse;
+  ...Body<UnauthorizedError>;
+}
+
+model PetSuccessResponse {
+  ...OkResponse;
+  ...Body<string>;
+}
+
+model PetNoContentResponse {
+  ...NoContentResponse;
+}
+// highlight-end
+
+@route("/pets")
+namespace Pets {
+  @get
+  // highlight-next-line
+  op listPets(...CommonParameters): PetListResponse;
+
+  @get
+  // highlight-start
+  op getPet(@path petId: int32, @header ifMatch?: string): PetResponse | PetNotFoundResponse;
+  // highlight-end
+  @useAuth(BearerAuth)
+  @post
+  // highlight-start
+  op createPet(@body pet: Pet):
+    | PetCreatedResponse
+    | PetAcceptedResponse
+    | PetErrorResponse
+    | PetUnauthorizedResponse;
+  // highlight-end
+
+  @useAuth(BearerAuth)
+  @put
+  // highlight-start
+  op updatePet(@path petId: int32, @body pet: Pet):
+    | PetResponse
+    | PetErrorResponse
+    | PetUnauthorizedResponse
+    | PetNotFoundResponse
+    | InternalServerErrorResponse;
+  // highlight-end
+
+  @useAuth(BearerAuth)
+  @delete
+  // highlight-start
+  op deletePet(@path petId: int32): PetNoContentResponse | PetUnauthorizedResponse;
+  // highlight-end
+
+  @route("{petId}/toys")
+  namespace Toys {
+    @added(Versions.v2)
+    @get
+    op listToys(@path petId: int32, ...CommonParameters): {
+      @body toys: Toy[];
+    };
+
+    @added(Versions.v2)
+    @post
+    @useAuth(BearerAuth)
+    op createToy(@path petId: int32, @body toy: Toy, ...CommonParameters): {
+      @statusCode statusCode: 201;
+      @body newToy: Toy;
+    };
+
+    @added(Versions.v2)
+    @put
+    @useAuth(BearerAuth)
+    op updateToy(@path petId: int32, @path toyId: int32, @body toy: Toy, ...CommonParameters): {
+      @body updatedToy: Toy;
+    };
+
+    @added(Versions.v2)
+    @delete
+    @useAuth(BearerAuth)
+    op deleteToy(@path petId: int32, @path toyId: int32, ...CommonParameters): {
+      @statusCode statusCode: 204;
+    };
+  }
 }
 
 @error
-model Error {
-  code: int32;
+model NotFoundError {
+  code: "NOT_FOUND";
   message: string;
 }
 
-model AnalyzeResult {
-  id: string;
-  analysis: string;
+@error
+model ValidationError {
+  code: "VALIDATION_ERROR";
+  message: string;
+  details: string[];
 }
 
-@route("/widgets")
-@tag("Widgets")
-interface Widgets {
-  /** List widgets */
-  @get list(): WidgetList | Error;
-  /** Read widgets */
-  @get read(@path id: string): Widget | Error;
-  /** Create a widget */
-  @post create(@body body: Widget): Widget | Error;
-  /** Update a widget */
-  @patch update(@path id: string, @body body: MergePatchUpdate<Widget>): Widget | Error;
-  /** Delete a widget */
-  @delete delete(@path id: string): void | Error;
+@error
+model UnauthorizedError {
+  code: "UNAUTHORIZED";
+  message: string;
+}
 
-  /** Analyze a widget */
-  @route("{id}/analyze") @post analyze(@path id: string): AnalyzeResult | Error;
+@error
+model InternalServerError {
+  code: "INTERNAL_SERVER_ERROR";
+  message: string;
+}
+
+model InternalServerErrorResponse {
+  @statusCode statusCode: 500;
+  @body error: InternalServerError;
 }
