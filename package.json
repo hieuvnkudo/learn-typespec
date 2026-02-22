@@ -1,0 +1,25 @@
+{
+  "name": "learn-typespec",
+  "type": "module",
+  "scripts": {
+    "gen:spec": "pnpm tsp compile ./typespec",
+    "watch:spec": "pnpm gen:spec --watch",
+    "dev": "concurrently -n \"TSP,CF\" -c \"blue,orange\" \"pnpm watch:spec\" \"wrangler dev\"",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+  },
+  "dependencies": {
+    "@hono/swagger-ui": "^0.5.3",
+    "@scalar/hono-api-reference": "^0.9.44",
+    "hono": "^4.12.1"
+  },
+  "devDependencies": {
+    "@typespec/compiler": "latest",
+    "@typespec/http": "latest",
+    "@typespec/openapi": "latest",
+    "@typespec/openapi3": "latest",
+    "@typespec/rest": "latest",
+    "concurrently": "^9.2.1",
+    "wrangler": "^4.4.0"
+  }
+}
