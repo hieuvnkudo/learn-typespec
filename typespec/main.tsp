@@ -559,6 +559,18 @@ model ChangePasswordMultipart {
   new_password: HttpPart<string>;
 }
 
+model SingleFileMultipart {
+  file: HttpPart<Http.File>;
+}
+
+model SetAvatarRequest {
+  asset_id: string;
+}
+
+model SetBackgroundRequest {
+  asset_id: string;
+}
+
 model UploadAvatarResponse {
   avatar_url: string;
 }
@@ -927,21 +939,19 @@ namespace Users {
   @useAuth(BearerAuth)
   @post
   @route("/me/avatar")
-  @summary("Upload avatar")
+  @summary("Cập nhật avatar từ media asset")
   op uploadAvatar(
     ...AuthHeaders,
-    @header contentType: "multipart/form-data",
-    @multipartBody body: { file: HttpPart<Http.File> }
+    @body body: SetAvatarRequest
   ): OkEnvelopeResponse<UploadAvatarResponse> | BadRequestEnvelopeResponse | UnauthorizedEnvelopeResponse;
 
   @useAuth(BearerAuth)
   @post
   @route("/me/background")
-  @summary("Upload ảnh nền")
+  @summary("Cập nhật ảnh nền từ media asset")
   op uploadBackground(
     ...AuthHeaders,
-    @header contentType: "multipart/form-data",
-    @multipartBody body: { file: HttpPart<Http.File> }
+    @body body: SetBackgroundRequest
   ): OkEnvelopeResponse<UploadBackgroundResponse> | BadRequestEnvelopeResponse | UnauthorizedEnvelopeResponse;
 
   @useAuth(BearerAuth)
