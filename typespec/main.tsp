@@ -503,10 +503,21 @@ model LoginResponse {
   tenant_slug: string;
 }
 
-model RegisterResponse {
-  user_id: string;
+model RegisterRequest {
   email: string;
+  password: string;
   display_name: string;
+  gender: Gender | string;
+  role: Role;
+  phone?: string;
+  consent?: boolean;
+  verification_media_asset_ids?: string[];
+}
+
+model RegisterResponse {
+  id: string;
+  email: string;
+  username: string;
 }
 
 model VerifyOtpRequest {
@@ -711,7 +722,7 @@ model PresignedUploadInitRequest {
   content_type: string;
   size_bytes: int64;
   checksum_sha256?: string;
-  purpose?: "post" | "comment" | "avatar" | "background";
+  purpose?: "post" | "comment" | "avatar" | "background" | "kyc";
   access?: "public" | "private";
 }
 
@@ -841,20 +852,10 @@ namespace Auth {
   @post
   @route("/register")
   @summary("Đăng ký tài khoản")
-  @doc("Đăng ký dạng multipart (có thể kèm file CCCD).")
+  @doc("Đăng ký bằng JSON. Nếu cần chứng thực người dùng, gửi verification_media_asset_ids (upload qua /media/uploads/public).")
   op register(
-    @header contentType: "multipart/form-data",
-    @multipartBody body: {
-      email: HttpPart<string>;
-      password: HttpPart<string>;
-      display_name: HttpPart<string>;
-      gender: HttpPart<Gender | string>;
-      role: HttpPart<Role>;
-      phone?: HttpPart<string>;
-      consent?: HttpPart<boolean>;
-      cccd_front?: HttpPart<Http.File>;
-      cccd_back?: HttpPart<Http.File>;
-    }
+    @header contentType: "application/json",
+    @body body: RegisterRequest
   ): OkEnvelopeResponse<RegisterResponse> | BadRequestEnvelopeResponse;
 
   @post
@@ -1268,16 +1269,20 @@ namespace Recommendations {
 @tag("Media")
 @route("/media")
 namespace Media {
-  @useAuth(BearerAuth)
-  @get
-  @route("/stream")
-  @summary("Stream media")
-  @doc("Tải media theo R2 key (query path). UI có thể thêm access_token trên query khi dùng trực tiếp trong browser.")
-  op stream(
-    ...AuthHeaders,
-    @query path: string,
-    @query access_token?: string
-  ): {@statusCode statusCode: 200; @body body: bytes;} | UnauthorizedEnvelopeResponse;
+  @post
+  @route("/uploads/public")
+  @summary("Khởi tạo presigned upload (public)")
+  @doc("Dành cho flow chưa đăng nhập (vd: KYC khi đăng ký). Client upload trực tiếp lên object storage.")
+  op initPublicUpload(@body body: PresignedUploadInitRequest): CreatedEnvelopeResponse<PresignedUploadInitResponse> | BadRequestEnvelopeResponse;
+
+  @post
+  @route("/uploads/public/{uploadId}/complete")
+  @summary("Hoàn tất upload (public)")
+  @doc("Xác nhận upload hoàn thành cho flow chưa đăng nhập (vd: KYC).")
+  op completePublicUpload(
+    @path uploadId: string,
+    @body body: PresignedUploadCompleteRequest
+  ): OkEnvelopeResponse<MediaAsset> | BadRequestEnvelopeResponse | NotFoundEnvelopeResponse;
 
   @useAuth(BearerAuth)
   @post
@@ -1296,6 +1301,17 @@ namespace Media {
     @path uploadId: string,
     @body body: PresignedUploadCompleteRequest
   ): OkEnvelopeResponse<MediaAsset> | BadRequestEnvelopeResponse | UnauthorizedEnvelopeResponse | NotFoundEnvelopeResponse;
+
+  @useAuth(BearerAuth)
+  @get
+  @route("/stream")
+  @summary("Stream media")
+  @doc("Tải media theo R2 key (query path). UI có thể thêm access_token trên query khi dùng trực tiếp trong browser.")
+  op stream(
+    ...AuthHeaders,
+    @query path: string,
+    @query access_token?: string
+  ): {@statusCode statusCode: 200; @body body: bytes;} | UnauthorizedEnvelopeResponse;
 
   @useAuth(BearerAuth)
   @get
