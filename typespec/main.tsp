@@ -332,10 +332,36 @@ model AuthHeaders {
 @doc("Pagination query params.")
 model PaginationQuery {
   @query
+  @doc("Page number (1-indexed).")
   page?: int32;
 
   @query("page_size")
+  @doc("Number of items per page.")
   page_size?: int32;
+}
+
+@doc("Pagination metadata for paginated responses.")
+model PaginationMeta {
+  @doc("Current page number.")
+  page: int32;
+
+  @doc("Number of items per page.")
+  page_size: int32;
+
+  @doc("Total number of items.")
+  total: int32;
+
+  @doc("Total number of pages.")
+  total_pages: int32;
+}
+
+@doc("Generic paginated response wrapper.")
+model PaginatedResponse<T> {
+  @doc("Array of items for current page.")
+  items: T[];
+
+  @doc("Pagination metadata.")
+  pagination: PaginationMeta;
 }
 
 @doc("Visibility setting.")
@@ -388,12 +414,24 @@ enum NotificationType {
   SYSTEM: "SYSTEM",
 }
 
+@doc("Author information for posts and comments.")
 model Author {
+  @doc("User ID.")
   id: string;
+
+  @doc("Display name.")
   displayName: string;
+
+  @doc("Username.")
   username: string;
+
+  @doc("Avatar URL or null if not set.")
   avatar: string | null;
+
+  @doc("User role.")
   role?: string;
+
+  @doc("Account status.")
   accountStatus?: string;
 }
 
@@ -416,84 +454,250 @@ model UserPrivacy {
   overrides?: PrivacyOverride[];
 }
 
-model PersonalInfo {
-  educationLevel?: string;
-  school?: string;
-  class?: string;
-  degree?: string;
-  major?: string;
-  graduationYear?: string;
-  academicYear?: string;
-  schoolYear?: string;
-  favoriteSubjects?: string[];
-  hobbies?: string[];
-  location?: string;
+@doc("User project information.")
+model Project {
+  @doc("Project ID.")
+  id: string;
+
+  @doc("Project title.")
+  @minLength(1)
+  @maxLength(200)
+  title: string;
+
+  @doc("Project category.")
+  category: string;
+
+  @doc("Project description.")
+  @maxLength(2000)
+  description: string;
+
+  @doc("Project image URL.")
+  imageUrl: string;
+
+  @doc("Optional source code link.")
+  @format("uri")
+  sourceLink?: string;
 }
 
+@doc("Personal information for user profile.")
+model PersonalInfo {
+  @doc("Education level.")
+  educationLevel?: string;
+
+  @doc("School name.")
+  school?: string;
+
+  @doc("Class name.")
+  class?: string;
+
+  @doc("Academic degree.")
+  degree?: string;
+
+  @doc("Major/field of study.")
+  major?: string;
+
+  @doc("Graduation year.")
+  graduationYear?: string;
+
+  @doc("Current academic year.")
+  academicYear?: string;
+
+  @doc("Current school year.")
+  schoolYear?: string;
+
+  @doc("List of favorite subjects.")
+  favoriteSubjects?: string[];
+
+  @doc("List of hobbies.")
+  hobbies?: string[];
+
+  @doc("Location/address.")
+  location?: string;
+
+  @doc("User projects.")
+  projects?: Project[];
+}
+
+@doc("Full user model with all fields (internal use).")
 model User {
+  @doc("User ID.")
   id: string;
+
+  @doc("User email address.")
+  @format("email")
   email: string;
+
+  @doc("User phone number.")
   phone?: string | null;
+
+  @doc("Unique username.")
   username: string;
+
+  @doc("Display name.")
   displayName: string;
+
+  @doc("User bio/description.")
   bio?: string;
+
+  @doc("Personal information.")
   personalInfo?: PersonalInfo;
+
+  @doc("Birth date.")
   birthDate?: string | null;
+
+  @doc("Avatar file path.")
   avatarPath?: string;
+
+  @doc("Avatar URL.")
   avatar?: string | null;
+
+  @doc("Background image file path.")
   backgroundPath?: string;
+
+  @doc("Background image URL.")
   background?: string | null;
+
+  @doc("Account status.")
   accountStatus: string;
+
+  @doc("User role.")
   role: string;
+
+  @doc("Storage quota in MB.")
+  @minValue(0)
   storageQuotaMb?: int32;
+
+  @doc("Account creation timestamp.")
   createdAt: string;
+
+  @doc("Last update timestamp.")
   updatedAt?: string;
+
+  @doc("Privacy settings.")
   privacy?: UserPrivacy;
+
+  @doc("Number of followers.")
+  @minValue(0)
   followers?: int32;
+
+  @doc("Number of following.")
+  @minValue(0)
   following?: int32;
+
+  @doc("Number of posts.")
+  @minValue(0)
   postsCount?: int32;
+
+  @doc("Whether the viewer is friends with this user.")
   isFriend?: boolean;
+
+  @doc("Whether the viewer is the owner of this profile.")
   isOwner?: boolean;
+
+  @doc("Friendship status with viewer.")
   friendshipStatus?: string;
+
+  @doc("Friend request ID if applicable.")
   friendRequestId?: string | null;
 }
 
+@doc("Public user profile (respects privacy settings).")
 model UserPublic {
+  @doc("User ID.")
   id: string;
+
+  @doc("Unique username.")
   username: string;
+
+  @doc("Display name.")
   displayName: string;
+
+  @doc("User bio/description.")
   bio?: string;
+
+  @doc("Personal information.")
   personalInfo?: PersonalInfo;
+
+  @doc("Birth date.")
   birthDate?: string | null;
+
+  @doc("Avatar file path.")
   avatarPath?: string;
+
+  @doc("Avatar URL.")
   avatar?: string | null;
+
+  @doc("Background image file path.")
   backgroundPath?: string;
+
+  @doc("Background image URL.")
   background?: string | null;
+
+  @doc("Account status.")
   accountStatus: string;
+
+  @doc("User role.")
   role: string;
+
+  @doc("Account creation timestamp.")
   createdAt: string;
+
+  @doc("Last update timestamp.")
   updatedAt?: string;
+
+  @doc("Number of followers.")
+  @minValue(0)
   followers?: int32;
+
+  @doc("Number of following.")
+  @minValue(0)
   following?: int32;
+
+  @doc("Number of posts.")
+  @minValue(0)
   postsCount?: int32;
+
+  @doc("Viewer context information.")
   viewer_context?: {
     is_owner: boolean;
     is_friend: boolean;
   };
+
+  @doc("Fields redacted due to privacy settings.")
   redacted_fields?: PrivacyField[];
+
+  @doc("Friendship status with viewer.")
   friendshipStatus?: string;
+
+  @doc("Friend request ID if applicable.")
   friendRequestId?: string | null;
 }
 
+@doc("Current user profile (includes private fields).")
 model UserMe extends UserPublic {
+  @doc("User email address.")
+  @format("email")
   email: string;
+
+  @doc("User phone number.")
   phone?: string | null;
+
+  @doc("Storage quota in MB.")
+  @minValue(0)
   storageQuotaMb?: int32;
+
+  @doc("Privacy settings.")
   privacy?: UserPrivacy;
 }
 
+@doc("Login request payload.")
 model LoginRequest {
+  @doc("User email address.")
+  @format("email")
   email: string;
+
+  @doc("User password.")
+  @minLength(8)
   password: string;
 }
 
@@ -503,14 +707,35 @@ model LoginResponse {
   tenant_slug: string;
 }
 
+@doc("Registration request payload.")
 model RegisterRequest {
+  @doc("User email address.")
+  @format("email")
   email: string;
+
+  @doc("User password (minimum 8 characters).")
+  @minLength(8)
   password: string;
+
+  @doc("Display name for the user.")
+  @minLength(1)
+  @maxLength(100)
   display_name: string;
+
+  @doc("User gender.")
   gender: Gender | string;
+
+  @doc("User role in the system.")
   role: Role;
+
+  @doc("Optional phone number.")
+  @pattern("^\\+?[1-9]\\d{1,14}$")
   phone?: string;
+
+  @doc("User consent to terms and conditions.")
   consent?: boolean;
+
+  @doc("Media asset IDs for verification documents.")
   verification_media_asset_ids?: string[];
 }
 
@@ -579,10 +804,25 @@ model UploadBackgroundResponse {
   background_url: string;
 }
 
+@doc("Profile update request payload.")
 model UpdateProfileRequest {
+  @doc("Updated display name.")
+  @minLength(1)
+  @maxLength(100)
   display_name?: string;
+
+  @doc("Updated username (alphanumeric and underscores only).")
+  @minLength(3)
+  @maxLength(30)
+  @pattern("^[a-zA-Z0-9_]+$")
   username?: string;
+
+  @doc("Updated bio/description.")
+  @maxLength(500)
   bio?: string;
+
+  @doc("Updated birth date (ISO 8601 format).")
+  @format("date")
   birth_date?: string;
 }
 
@@ -599,50 +839,104 @@ model ReactivationRequest {
   email: string;
 }
 
+@doc("Post statistics.")
 model PostStats {
+  @doc("Total number of reactions.")
+  @minValue(0)
   reactions: int32;
+
+  @doc("Total number of comments.")
+  @minValue(0)
   comments: int32;
+
+  @doc("Total number of shares.")
+  @minValue(0)
   shares: int32;
 }
 
+@doc("Post summary for feed and lists.")
 model PostSummary {
+  @doc("Post ID.")
   id: string;
+
+  @doc("Post author information.")
   author: Author;
+
+  @doc("Post content text.")
   content: string;
+
+  @doc("Array of media URLs (legacy).")
   mediaUrls: string[];
+
+  @doc("Array of media assets with metadata.")
   media?: MediaAssetSummary[];
+
+  @doc("Post statistics.")
   stats: PostStats;
+
+  @doc("Current user's reaction to this post.")
   userReaction: ReactionType | null;
+
+  @doc("Post visibility setting.")
   visibility: Visibility;
+
+  @doc("Type of post.")
   postType: PostType;
+
+  @doc("Field/category ID.")
   fieldId?: string;
+
+  @doc("Post creation timestamp.")
   createdAt: string;
+
+  @doc("Last update timestamp.")
   updatedAt: string;
 }
 
+@doc("Full post model with all details including shared post.")
 model Post {
+  @doc("Post ID.")
   id: string;
+
+  @doc("Post author information.")
   author: Author;
+
+  @doc("Post content text.")
   content: string;
+
+  @doc("Array of media URLs (legacy).")
   mediaUrls: string[];
+
+  @doc("Array of media assets with metadata.")
   media?: MediaAssetSummary[];
+
+  @doc("Post statistics.")
   stats: PostStats;
+
+  @doc("Current user's reaction to this post.")
   userReaction: ReactionType | null;
+
+  @doc("Shared post if this is a share.")
   sharedPost: PostSummary | null;
+
+  @doc("Post visibility setting.")
   visibility: Visibility;
+
+  @doc("Type of post.")
   postType: PostType;
+
+  @doc("Field/category ID.")
   fieldId?: string;
+
+  @doc("Post creation timestamp.")
   createdAt: string;
+
+  @doc("Last update timestamp.")
   updatedAt: string;
 }
 
-model FeedResponse {
-  posts: PostSummary[];
-  page: int32;
-  page_size: int32;
-  total: int32;
-  total_pages: int32;
-}
+@doc("Feed response with paginated posts.")
+model FeedResponse extends PaginatedResponse<PostSummary> {}
 
 model UpdatePostRequest {
   content_text?: string;
@@ -650,41 +944,74 @@ model UpdatePostRequest {
   media_uploads?: string[];
 }
 
+@doc("Create post request payload.")
 model CreatePostRequest {
+  @doc("Post content text.")
+  @minLength(1)
+  @maxLength(10000)
   content_text: string;
+
+  @doc("Post visibility setting.")
   visibility?: Visibility;
+
+  @doc("Type of post.")
   post_type?: PostType;
+
+  @doc("Field/category ID for the post.")
   field_id?: string;
+
+  @doc("Array of media asset IDs to attach.")
   media_asset_ids?: string[];
 }
 
  
 
+@doc("Comment statistics.")
 model CommentStats {
+  @doc("Total number of reactions.")
+  @minValue(0)
   reactions: int32;
+
+  @doc("Total number of replies.")
+  @minValue(0)
   replies: int32;
 }
 
+@doc("Comment model.")
 model Comment {
+  @doc("Comment ID.")
   id: string;
+
+  @doc("ID of the post this comment belongs to.")
   postId: string;
+
+  @doc("Comment author information.")
   author: Author;
+
+  @doc("Parent comment ID for replies.")
   parentCommentId: string | null;
+
+  @doc("Comment content text.")
   content: string;
+
+  @doc("Array of media URLs.")
   mediaUrls: string[];
+
+  @doc("Comment statistics.")
   stats: CommentStats;
+
+  @doc("Current user's reaction to this comment.")
   userReaction: ReactionType | null;
+
+  @doc("Comment creation timestamp.")
   createdAt: string;
+
+  @doc("Last update timestamp.")
   updatedAt: string;
 }
 
-model CommentResponse {
-  comments: Comment[];
-  page: int32;
-  page_size: int32;
-  total: int32;
-  total_pages: int32;
-}
+@doc("Comment response with paginated comments.")
+model CommentResponse extends PaginatedResponse<Comment> {}
 
 model UpdateCommentRequest {
   content_text: string;
@@ -692,9 +1019,17 @@ model UpdateCommentRequest {
 
  
 
+@doc("Create comment request payload.")
 model CreateCommentRequest {
+  @doc("ID of the post to comment on.")
   post_id: string;
+
+  @doc("Comment content text.")
+  @minLength(1)
+  @maxLength(5000)
   content_text: string;
+
+  @doc("Array of media asset IDs to attach.")
   media_asset_ids?: string[];
 }
 
@@ -706,21 +1041,51 @@ model ReplyRequest {
   media_asset_ids?: string[];
 }
 
+@doc("Media asset summary information.")
 model MediaAssetSummary {
+  @doc("Asset ID.")
   id: string;
+
+  @doc("Media type.")
   type: "image" | "video" | "file";
+
+  @doc("Access level.")
   access: "public" | "private";
+
+  @doc("CDN URL for the asset.")
+  @format("uri")
   cdn_url?: string;
+
+  @doc("Original upload URL.")
+  @format("uri")
   original_url?: string;
+
+  @doc("Thumbnail URL for images/videos.")
+  @format("uri")
   thumbnail_url?: string;
+
+  @doc("Image/video width in pixels.")
+  @minValue(0)
   width?: int32;
+
+  @doc("Image/video height in pixels.")
+  @minValue(0)
   height?: int32;
+
+  @doc("MIME content type.")
   content_type?: string;
+
+  @doc("File size in bytes.")
+  @minValue(0)
   size_bytes?: int64;
 }
 
+@doc("Full media asset model with status.")
 model MediaAsset extends MediaAssetSummary {
+  @doc("Processing status.")
   status: "pending" | "ready" | "failed";
+
+  @doc("Asset creation timestamp.")
   createdAt: string;
 }
 
@@ -820,7 +1185,17 @@ model Notification {
   createdAt: string;
 }
 
+@doc("Unread notification count response.")
 model UnreadCountResponse {
+  @doc("Number of unread notifications.")
+  @minValue(0)
+  unread_count: int32;
+}
+
+@doc("Notification list response with pagination and unread count.")
+model NotificationListResponse extends PaginatedResponse<Notification> {
+  @doc("Number of unread notifications.")
+  @minValue(0)
   unread_count: int32;
 }
 
@@ -1154,7 +1529,7 @@ namespace Friends {
   @get
   @route("/")
   @summary("Danh sách bạn bè")
-  op listFriends(...AuthHeaders, ...PaginationQuery): OkEnvelopeResponse<{ friends: Friend[]; total: int32; page: int32; page_size: int32; total_pages: int32 }> | UnauthorizedEnvelopeResponse;
+  op listFriends(...AuthHeaders, ...PaginationQuery): OkEnvelopeResponse<PaginatedResponse<Friend>> | UnauthorizedEnvelopeResponse;
 
   @useAuth(BearerAuth)
   @post
@@ -1213,7 +1588,7 @@ namespace Notifications {
   @get
   @route("/")
   @summary("Danh sách thông báo")
-  op listNotifications(...AuthHeaders, ...PaginationQuery): OkEnvelopeResponse<{ notifications: Notification[]; page: int32; page_size: int32; total: int32; total_pages: int32; unread_count: int32 }> | UnauthorizedEnvelopeResponse;
+  op listNotifications(...AuthHeaders, ...PaginationQuery): OkEnvelopeResponse<NotificationListResponse> | UnauthorizedEnvelopeResponse;
 
   @useAuth(BearerAuth)
   @post
